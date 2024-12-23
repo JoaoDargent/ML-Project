@@ -21,54 +21,26 @@ def load_data():
     
     # Check if the CSV file exists
     if not os.path.exists("data/merged_with_fips.csv"):
-        # GitHub raw URL for data.zip
-        github_url = "https://github.com/JoaoDargent/ML-Project/raw/refs/heads/main/webapp/data/data.zip"
-        
         try:
-            # Download the file from GitHub
-            response = requests.get(github_url)
-            if response.status_code == 200:
-                # Save the zip file locally
-                with open("data.zip", 'wb') as f:
-                    f.write(response.content)
-                st.success("Successfully downloaded data from GitHub!")
-                
-                # Debug: List contents of zip file
-                with zipfile.ZipFile("data.zip", 'r') as zip_ref:
-                    st.write("Zip contents:", zip_ref.namelist())
-                    
-                    # Extract the zip file
-                    zip_ref.extractall(".")  # Extract to current directory instead of data directory
+            # Extract from local data.zip if it exists
+            if os.path.exists("data/data.zip"):
+                with zipfile.ZipFile("data/data.zip", 'r') as zip_ref:
+                    zip_ref.extractall(".")
                 st.success("Data files successfully extracted!")
-                
-                # Debug: List contents of current and data directories
-                st.write("Current directory contents:", os.listdir("."))
-                if os.path.exists("data"):
-                    st.write("Data directory contents:", os.listdir("data"))
-                
-                # Clean up - remove the zip file after extraction
-                os.remove("data.zip")
             else:
-                st.error(f"Failed to download data: HTTP {response.status_code}")
+                st.error("data.zip not found. Please ensure the file exists in the webapp directory.")
                 return None
         except Exception as e:
-            st.error(f"Error downloading/extracting data: {str(e)}")
+            st.error(f"Error extracting data: {str(e)}")
             return None
     
-    # Debug: Check if file exists before trying to read it
-    csv_path = "data/merged_with_fips.csv"
-    st.write(f"Checking for CSV at: {csv_path}")
-    st.write(f"File exists: {os.path.exists(csv_path)}")
-    
     try:
-        df = pd.read_csv(csv_path, index_col=0)
+        df = pd.read_csv("data/merged_with_fips.csv", index_col=0)
         df['fips'] = df['fips'].apply(lambda x: f"{int(float(x)):05d}" if pd.notnull(x) else None)
-        # Use Accident Year directly
         df['Year'] = df['Accident Year']
         return df
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
-        st.write("Current working directory:", os.getcwd())
         return None
 
 # Load GeoJSON
@@ -76,19 +48,18 @@ def load_data():
 def load_geojson():
     geojson_path = "data/counties.json"
     
-    # Check if the JSON file exists
     if not os.path.exists(geojson_path):
-        # Look for zip file
-        if os.path.exists("data.zip"):
-            try:
+        try:
+            # Extract from local data.zip if it exists
+            if os.path.exists("data.zip"):
                 with zipfile.ZipFile("data.zip", 'r') as zip_ref:
                     zip_ref.extractall(".")
                 st.success("GeoJSON files successfully extracted!")
-            except Exception as e:
-                st.error(f"Error extracting GeoJSON files: {str(e)}")
+            else:
+                st.error("data.zip not found. Please ensure the file exists in the webapp directory.")
                 return None
-        else:
-            st.error(f"Neither {geojson_path} nor data.zip found. Please ensure one of them exists.")
+        except Exception as e:
+            st.error(f"Error extracting GeoJSON: {str(e)}")
             return None
     
     try:
