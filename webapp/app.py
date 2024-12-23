@@ -10,6 +10,7 @@ from feature_engineering import engineer_features
 from data_scaling_encoding import encode_and_scale, select_model_features
 import zipfile
 import os
+import requests
 
 # Load data
 @st.cache_data
@@ -20,17 +21,30 @@ def load_data():
     
     # Check if the CSV file exists
     if not os.path.exists("data/merged_with_fips.csv"):
-        # Look for zip file
-        if os.path.exists("data.zip"):
-            try:
+        # GitHub raw URL for data.zip
+        github_url = "https://github.com/JoaoDargent/ML-Project/raw/refs/heads/main/webapp/data/data.zip"
+        
+        try:
+            # Download the file from GitHub
+            response = requests.get(github_url)
+            if response.status_code == 200:
+                # Save the zip file locally
+                with open("data.zip", 'wb') as f:
+                    f.write(response.content)
+                st.success("Successfully downloaded data from GitHub!")
+                
+                # Extract the zip file
                 with zipfile.ZipFile("data.zip", 'r') as zip_ref:
-                    zip_ref.extractall(".")
+                    zip_ref.extractall("data")  # Extract to data directory
                 st.success("Data files successfully extracted!")
-            except Exception as e:
-                st.error(f"Error extracting data files: {str(e)}")
+                
+                # Clean up - remove the zip file after extraction
+                os.remove("data.zip")
+            else:
+                st.error(f"Failed to download data: HTTP {response.status_code}")
                 return None
-        else:
-            st.error("Neither data/merged_with_fips.csv nor data.zip found. Please ensure one of them exists.")
+        except Exception as e:
+            st.error(f"Error downloading/extracting data: {str(e)}")
             return None
     
     try:
