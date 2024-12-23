@@ -33,10 +33,18 @@ def load_data():
                     f.write(response.content)
                 st.success("Successfully downloaded data from GitHub!")
                 
-                # Extract the zip file
+                # Debug: List contents of zip file
                 with zipfile.ZipFile("data.zip", 'r') as zip_ref:
-                    zip_ref.extractall("data")  # Extract to data directory
+                    st.write("Zip contents:", zip_ref.namelist())
+                    
+                    # Extract the zip file
+                    zip_ref.extractall(".")  # Extract to current directory instead of data directory
                 st.success("Data files successfully extracted!")
+                
+                # Debug: List contents of current and data directories
+                st.write("Current directory contents:", os.listdir("."))
+                if os.path.exists("data"):
+                    st.write("Data directory contents:", os.listdir("data"))
                 
                 # Clean up - remove the zip file after extraction
                 os.remove("data.zip")
@@ -47,14 +55,20 @@ def load_data():
             st.error(f"Error downloading/extracting data: {str(e)}")
             return None
     
+    # Debug: Check if file exists before trying to read it
+    csv_path = "data/merged_with_fips.csv"
+    st.write(f"Checking for CSV at: {csv_path}")
+    st.write(f"File exists: {os.path.exists(csv_path)}")
+    
     try:
-        df = pd.read_csv("data/merged_with_fips.csv", index_col=0)
+        df = pd.read_csv(csv_path, index_col=0)
         df['fips'] = df['fips'].apply(lambda x: f"{int(float(x)):05d}" if pd.notnull(x) else None)
         # Use Accident Year directly
         df['Year'] = df['Accident Year']
         return df
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
+        st.write("Current working directory:", os.getcwd())
         return None
 
 # Load GeoJSON
