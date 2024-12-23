@@ -1,0 +1,4 @@
+[server]
+runOnSave = true
+headless = false
+maxMessageSize = 300
